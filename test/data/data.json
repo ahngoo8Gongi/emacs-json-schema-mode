@@ -1,0 +1,6 @@
+{
+    "id" : 1,
+    "nme": "Dan Nanni",
+    "age": 25,
+    "skills": ["shell scripting", "data center"]
+}
