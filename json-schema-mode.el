@@ -28,7 +28,7 @@
 ;; - schema validation (via kwalify)
 
 ;; Exported names start with "json-schema-", "json-" or "yaml-".
-;; Private names start with "json-schemah--", "json--" or "yaml--".
+;; Private names start with "json-schema--", "json--" or "yaml--".
 
 ;;; Code
 
@@ -46,16 +46,16 @@
 
 (defun debug-msg (&rest args)
   (if json-schema-debug
-      (message args))
+      (cons 'message args))
   )
 
 (defun info-msg (&rest args)
-  (message args)
+  (cons 'message args)
   )
 
 (defun fun-fail (&rest args)
   (if json-schema-debug
-      (message args))
+      (cons 'message args))
   )
 
 ;;
