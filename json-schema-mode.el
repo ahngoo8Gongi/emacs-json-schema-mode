@@ -44,8 +44,6 @@
 (defvar json-schema-config-dir-pattern "^\.emacs\.d\$")
 (defvar json-schema-config-file-pattern "schema\.config\$")
 
-(debug-msg "schema variable %s %s" json-schema-config-dir-pattern json-schema-config-file-pattern)
-
 (defun debug-msg (&rest args)
   (if json-schema-debug
       (apply #'message args))
@@ -58,6 +56,8 @@
 (defun fun-fail (&rest args)
   (apply #'message args)
   )
+
+(debug-msg "schema variable %s %s" json-schema-config-dir-pattern json-schema-config-file-pattern)
 
 ;;
 ;; @function: realfile
@@ -93,7 +93,13 @@
   )
 
 (defun json-schema--validate-file (file schema)
-  (run-command-to-buffer json-schema-validator "*SCHEMA*" "-E" "-f" schema file)
+  (if (file-readable-p schema)
+      (if (file-readable-p file)
+          (progn
+            (run-command-to-buffer json-schema-validator "*SCHEMA*" "-E" "-f" schema file)
+            )
+        (fun_fail "File is not readable: %s" file))
+    (fun_fail "Schema is not readable: %s" schema))
   )
 
 (defun json-schema-check-validator ()
@@ -169,22 +175,28 @@
           (mapcan (lambda (schema) ;; validate file against schema
                     (json-schema--validate-file file schema))
                   (mapcan (lambda (cstr) ;; match filename pattern vs. filename
+                            (progn
+;;                              (debug-msg "check cstr %s" cstr)
                             (cond ((string-match-p (car cstr) file) (cdr cstr))
-                                  (t nil)))
+                                  (t nil))))
 		          (unwrap-list-of-lists
                            (mapcan (lambda (cfg) ;; extract "schema-patterns" elements
-                                     (cond ((string-equal (car cfg) "schema-patterns") (cdr cfg))
-                                           (t nil)))
+                                     (progn
+  ;;                                     (debug-msg "Extracting schema pattern from %s" cfg)
+                                        (cond ((string-equal (car cfg) "schema-patterns") (cdr cfg))
+                                              (t nil))))
 			           (mapcan (lambda (file) ;; eval config file as list
                                              (with-temp-buffer
                                                (progn
+    ;;                                             (debug-msg "evaluating config file %s" file)
                                                  (insert-file-contents file)
                                                  (list (read (buffer-string)))
                                                  )))
                                            ;;  all config files
 				           (json-schema-config-files file))))))
         (fun-fail "Buffer %s is not holding a file." buffer)
-        ))
+        )
+      (debug-msg "Buffer validation running on file %s" file))
     ))
 
 (defun toggle-json-auto-validate ()
@@ -227,7 +239,7 @@
   (let ((map (make-sparse-keymap)))
     (easy-menu-define nil map "JSON Schema"
       '("Schema-Validate"
-        ["Validate buffer" schema-validate--buffer t]
+        ["Validate buffer" json-schema-validate-buffer t]
         ["Settings" nil
          (fboundp #'inferior-moz-process)]))
     (message "Establishing schema validate keymap")
