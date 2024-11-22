@@ -1,6 +1,6 @@
 ;;; json-schema-mode.el --- Schema validating mode for editing JSON/YAML -*- lexical-binding: t -*-
 
-;; Copyright (C) 2023, Holger Smolinski
+;; Copyright (C) 2023-2024, Holger Smolinski
 ;; SPDX-License-Identifier: GPL-3.0-only
 
 ;; Author: Holger Smolinski <json-emacs@smolinski.name>
@@ -41,21 +41,22 @@
 (defvar json-schema-validator "kwalify" "The external validator program to run")
 (defvar json-auto-validate t "Whether ot not to auto validate JSON on save")
 (defvar yaml-auto-validate t "Whether ot not auto validate YAML on save")
-(defvar json-schema-config-dir-pattern "^\\.emacs\\.d\\$")
-(defvar json-schema-config-file-pattern "schema\\.config$")
+(defvar json-schema-config-dir-pattern "^\.emacs\.d\$")
+(defvar json-schema-config-file-pattern "schema\.config\$")
+
+(debug-msg "schema variable %s %s" json-schema-config-dir-pattern json-schema-config-file-pattern)
 
 (defun debug-msg (&rest args)
   (if json-schema-debug
-      (cons 'message args))
+      (apply #'message args))
   )
 
 (defun info-msg (&rest args)
-  (cons 'message args)
+  (apply #'message args)
   )
 
 (defun fun-fail (&rest args)
-  (if json-schema-debug
-      (cons 'message args))
+  (apply #'message args)
   )
 
 ;;
@@ -104,16 +105,17 @@
   (debug-msg "collect-directories-by-pattern: %s %s" dir pattern)
   (if (file-directory-p dir)
       (let ((dirlist (append (mapcan
-			      (lambda (dir)
-				(when (file-directory-p dir)
-				  (list dir)))
+			      (lambda (d)
+                                "return the directories in dir's content matching the pattern"
+                                (when (file-directory-p d)
+                                  (list d)))
 			      (directory-files dir t pattern))
 			     (let ((parent-dir (parent-directory dir)))
 			       (unless (eq parent-dir nil)
 				 (collect-directories-by-pattern parent-dir pattern))))))
 	(info-msg "Found directories: %s" dirlist)
 	dirlist)
-        (fun-fail  "%s is not a directory" dir)
+    (fun-fail  "%s is not a directory" dir)
     )
   )
 
